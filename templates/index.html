@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI JTL Mapper</title>
+    <script>
+        function getNextComponent() {
+            fetch("/next")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        document.getElementById("component").innerText = data.message;
+                        document.getElementById("predicted").innerText = "";
+                        document.getElementById("buttons").style.display = "none";
+                    } else {
+                        document.getElementById("component").innerText = data.component;
+                        document.getElementById("predicted").innerText = data.predicted_jtl;
+                        document.getElementById("buttons").style.display = "block";
+                    }
+                });
+        }
+
+        function approveMapping() {
+            const component = document.getElementById("component").innerText;
+            const jtl_article_number = document.getElementById("predicted").innerText;
+
+            fetch("/approve", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ component, jtl_article_number })
+            }).then(() => getNextComponent());
+        }
+
+        function rejectMapping() {
+            const component = document.getElementById("component").innerText;
+
+            fetch("/reject", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ component })
+            }).then(() => getNextComponent());
+        }
+    </script>
+</head>
+<body onload="getNextComponent()">
+    <h1>AI JTL Mapper</h1>
+    <p><strong>Component:</strong> <span id="component"></span></p>
+    <p><strong>Predicted JTL Article Number:</strong> <span id="predicted"></span></p>
+
+    <div id="buttons">
+        <button onclick="approveMapping()">✅ Approve</button>
+        <button onclick="rejectMapping()">❌ Skip</button>
+    </div>
+</body>
+</html>
