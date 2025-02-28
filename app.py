@@ -26,6 +26,43 @@ def load_unmapped_components():
     return pd.read_csv("unmapped_components.csv")
 
 
+pipeline = joblib.load("jtl_mapper_model.pkl")
+fallback_model = joblib.load("fallback_model.pkl")
+
+
+# Function to auto-generate a JTL article number
+def generate_new_jtl(component):
+    words = component.split()
+    keywords = [word.upper()[:4] for word in words if len(word) > 3]
+    base = "_".join(keywords[:3])
+    random_number = random.randint(100, 999)  # Avoid duplicates
+    return f"JTL_{base}_{random_number}"
+
+
+@app.route("/predict", methods=["POST"])
+def predict_jtl():
+    data = request.json
+    component = data.get("component")
+
+    if not component:
+        return jsonify({"error": "Component description required"}), 400
+
+    try:
+        # First, try AI prediction
+        predicted_jtl = pipeline.predict([component])[0]
+        return jsonify({"component": component, "predicted_jtl": predicted_jtl})
+    except:
+        # If no match found, use fallback model
+        closest_jtl = fallback_model.predict([component])[0]
+
+        if closest_jtl:  # If a close match exists, return it
+            return jsonify({"component": component, "predicted_jtl": closest_jtl})
+
+        # Otherwise, generate a completely new JTL article number
+        new_jtl = generate_new_jtl(component)
+        return jsonify({"component": component, "predicted_jtl": new_jtl})
+
+
 
 @app.route("/")
 def index():

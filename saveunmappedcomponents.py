@@ -24,7 +24,7 @@ def get_today_pcs():
     connection = get_db_connection()
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT * FROM computers WHERE finished_time LIKE '%2025-02-%' AND full_disk_info IS NOT null AND customer_serial IS NOT null and status = 'Fertig' ")
+            "SELECT * FROM computers WHERE finished_time LIKE '%2025-02%' AND full_disk_info IS NOT null AND customer_serial IS NOT null and status = 'Fertig' ")
         return cursor.fetchall()
 
 
@@ -55,7 +55,11 @@ if __name__ == '__main__':
 
     for computer in computers:
         pcs += 1
+        print(f"Processing PC {pcs} of  {len(computers)}")
         customer_serial = computer['customer_serial']
+
+
+
         pc_info = search_computer_with_local_api(customer_serial)
 
         if pc_info:
@@ -68,7 +72,7 @@ if __name__ == '__main__':
 
             for component in components:
                 comp += 1
-                if component['jtl_article_number'] in ['None', None]:
+                if component['jtl_article_number'] in ['None', None, 'null']:
                     print(
                         f"Component {component['description']} has no JTL article number for PC with serial {customer_serial}")
                     log_unmapped_component(component['description'], customer_serial)
