@@ -47,6 +47,15 @@ def approve_mapping():
         update_status(f"✅ Approved: {current_mapping['component']} → {current_mapping['predicted_jtl']}")
         load_next_mapping()
 
+
+def kill_app_server():
+    """Kill the Flask server"""
+    response = requests.get(f"{FLASK_SERVER}/exit")
+    if response.status_code == 200:
+        print("Server killed successfully!")
+    else:
+        print("Failed to kill server!")
+
 def reject_mapping():
     """Reject the current mapping"""
     global current_mapping
@@ -108,42 +117,51 @@ def ps4_listener():
                         return
         time.sleep(0.1)
 
+
+if __name__ == '__main__':
+    """Run the GUI"""
 # Create GUI Window
-root = tk.Tk()
-root.title("AI JTL Mapper")
-root.geometry("900x350")
+    root = tk.Tk()
+    root.title("AI JTL Mapper")
+    root.geometry("900x350")
 
-# UI Components
-frame = ttk.Frame(root, padding=20)
-frame.pack(expand=True)
+    # UI Components
+    frame = ttk.Frame(root, padding=20)
+    frame.pack(expand=True)
 
-component_label = ttk.Label(frame, text="Loading component...", font=("Arial", 12))
-component_label.pack(pady=10)
+    component_label = ttk.Label(frame, text="Loading component...", font=("Arial", 12))
+    component_label.pack(pady=10)
 
-predicted_label = ttk.Label(frame, text="", font=("Arial", 10, "bold"))
-predicted_label.pack(pady=5)
+    predicted_label = ttk.Label(frame, text="", font=("Arial", 10, "bold"))
+    predicted_label.pack(pady=5)
 
-status_label = ttk.Label(frame, text="", font=("Arial", 10))
-status_label.pack(pady=5)
+    status_label = ttk.Label(frame, text="", font=("Arial", 10))
+    status_label.pack(pady=5)
 
-approve_button = ttk.Button(frame, text="✅ Approve", command=approve_mapping)
-approve_button.pack(side=tk.RIGHT, padx=10)
+    approve_button = ttk.Button(frame, text="✅ Approve", command=approve_mapping)
+    approve_button.pack(side=tk.RIGHT, padx=10)
 
-reject_button = ttk.Button(frame, text="❌ Reject", command=reject_mapping)
-reject_button.pack(side=tk.LEFT, padx=10)
+    reject_button = ttk.Button(frame, text="❌ Reject", command=reject_mapping)
+    reject_button.pack(side=tk.LEFT, padx=10)
 
-new_jtl_label = ttk.Label(frame, text="Enter new JTL Article Number:")
-new_jtl_label.pack(pady=5)
+    kill_button = ttk.Button(frame, text="🔴 Kill Server", command=kill_app_server)
+    kill_button.pack(side=tk.LEFT, padx=10)
 
-new_jtl_entry = ttk.Entry(frame, width=30)
-new_jtl_entry.pack(pady=5)
 
-new_jtl_button = ttk.Button(frame, text="🆕 Create New JTL", command=create_new_jtl)
-new_jtl_button.pack(pady=5)
+    new_jtl_label = ttk.Label(frame, text="Enter new JTL Article Number:")
+    new_jtl_label.pack(pady=5)
 
-# Start GUI & Controller Thread
-load_next_mapping()
-controller_thread = threading.Thread(target=ps4_listener, daemon=True)
-controller_thread.start()
+    new_jtl_entry = ttk.Entry(frame, width=30)
+    new_jtl_entry.pack(pady=5)
 
-root.mainloop()
+    new_jtl_button = ttk.Button(frame, text="🆕 Create New JTL", command=create_new_jtl)
+    new_jtl_button.pack(pady=5)
+
+    # Start GUI & Controller Thread
+    load_next_mapping()
+    controller_thread = threading.Thread(target=ps4_listener, daemon=True)
+    controller_thread.start()
+
+    root.mainloop()
+
+

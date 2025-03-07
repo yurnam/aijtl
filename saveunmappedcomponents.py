@@ -35,11 +35,11 @@ def get_pc_parts_mapping(model):
             raise Exception(f"No mapping found for model {model}")
 
 # Fetch PCs completed today
-def get_today_pcs():
+def get_today_pcs(datesql):
     connection = get_db_connection()
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT * FROM computers WHERE finished_time LIKE '%2025-03-06%' AND full_disk_info IS NOT null AND customer_serial IS NOT null ")
+            f"SELECT * FROM computers WHERE finished_time LIKE '%{datesql}%' AND full_disk_info IS NOT null AND customer_serial IS NOT null ")
         return cursor.fetchall()
 
 
@@ -64,8 +64,8 @@ def log_unmapped_component(description, customer_serial):
 
 
 # Main Processing
-if __name__ == '__main__':
-    computers = get_today_pcs()
+def process_computers_from_date(date):
+    computers = get_today_pcs(date)
     comp, pcs = 0, 0
 
     for computer in computers:
@@ -99,3 +99,7 @@ if __name__ == '__main__':
                     log_unmapped_component(component['description'], customer_serial)
 
     print(f"Processed {comp} components for {pcs} PCs")
+
+
+if __name__ == '__main__':
+    process_computers_from_date('2025-03-07')

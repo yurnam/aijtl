@@ -1,3 +1,5 @@
+import sys
+
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import joblib
@@ -67,6 +69,11 @@ def predict_jtl():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/exit")
+def app_exit():
+    sys.exit(0)
 
 
 

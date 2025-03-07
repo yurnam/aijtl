@@ -772,9 +772,9 @@ hp hp CDDVDW SH-216ALN-HDD-ata-1GB,DVD-Brenner
 B650M PROJECT ZERO (MS-7E09),MAB-B650-PZ
 COOLER_LIQUID_240_BLACK,KUE-WA-240-S
 M378A2G43CB3-CWE - DIMM DDR4 Synchronous 2667 MHz (0.4 ns)-16GB,RAM-16GB-DDR4
-MK5_Power_Intel_W,COMP-MKV-Power-Intel
-MK5_Power_AMD,COMP-MKV-Power-AMD
-MK2PowerIntel-13,COMP-MK2-Power-Intel
+MK5_Power_Intel_W,PC-MKV-Power-Intel
+MK5_Power_AMD,PC-MKV-Power-AMD
+MK2PowerIntel-13,PC-MK2-Power-Intel
 MK5_AMD_5070TI_LEXI_W,Nicht im WAWI
 8ATF1G64AZ-2G3H1 - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2400 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
 BasicV2Intel-GT730,PC-Basic-V2-Intel
@@ -782,7 +782,7 @@ M83Tiny-16-512,PC-M83-Tiny-i5
 AGI320016SD138 - SODIMM DDR4 Synchronous 2933 MHz (0.3 ns)-16GB,RAM-16GB-DDR4-SODIMM
 W641GU48J7240ND - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2400 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
 M378A1K43BB2-CRC - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2400 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
-MK5_Power_AMD_W,COMP-MKV-Power-AMD
+MK5_Power_AMD_W,PC-MKV-Power-AMD
 V15G4-8-512-R5_W,Nicht im WAWI
 UltraV2Intel-GT730-13,PC-Ultra-V2-Intel
 HMT41GS6AFR8A-PB - SODIMM DDR3 Synchronous 1600 MHz (0.6 ns)-8GB,RAM-8GB-DDR3-SODIMM
@@ -824,3 +824,26 @@ Intel integrated,Nicht im WAWI
 CT8G4DFRA32A.M8FR - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2400 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
 K531R8-ETB - DIMM DDR3 Synchronous 1600 MHz (0.6 ns)-4GB,RAM-4GB-DDR3
 99U5702-095.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+9905702-136.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+9905702-022.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+99U5702-101.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+99U5702-089.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+9905702-120.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+M378A5244CB0-CRC - DIMM DDR4 Synchronous 2400 MHz (0.4 ns)-4GB,RAM-4GB-DDR4
+HMA82GU6CJR8N-VK - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-16GB,RAM-16GB-DDR4
+M391A2K43BB1-CTD - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-16GB,RAM-16GB-DDR4
+KY7N41-MID - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+M378A2K43DB1-CTD - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-16GB,RAM-16GB-DDR4
+M378A2K43DB1-CTD - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-16GB,RAM-16GB-DDR4
+9905702-082.A00G - DIMM DDR4 Synchronous Unbuffered (Unregistered) 2667 MHz (0.4 ns)-8GB,RAM-8GB-DDR4
+MK5_Pro_AMD_W,PC-MKV-Pro-AMD
+MK5_Pro_AMD,PC-MKV-Pro-AMD
+M378A5143EB2-CRC - DIMM DDR4 Synchronous 2400 MHz (0.4 ns)-4GB,RAM-4GB-DDR4
+ATAPI ATAPI iHAS124 W-HDD-ata-1GB,DVD-Brenner
+ATA MicroFrom 256GB SATA3 SSD-SSD-ata-256GB,SSD-240GB-2-5
+HL-DT-ST HL-DT-ST DVDRAM GH24NSC0-HDD-ata-1GB,DVD-Brenner
+Intel(R) Co2e(TM) i7-4790 CPU @ 3.60GHz,CPU-i7-4790
+ATA HS-SSD-WAVE(S)-B 512G-SSD-sata-512GB,SSD-512GB-2-5
+MAG Z790 TOMAHAWK WIFI (MS-7D91),MAB-Z790-TOMAHAWK
+MK5_Pro_Intel_W,PC-MKV-Pro-Intel
+Intel(R) Core(TM) i5-4590S CPU @ 3.00GHz,CPU-i5-4590

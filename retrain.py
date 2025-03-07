@@ -82,3 +82,8 @@ def retrain():
         print("Added AI-generated mappings and updated dataset!")
 
     print("Retraining complete.")
+
+
+
+if __name__ == '__main__':
+    retrain()
