@@ -50,6 +50,12 @@ def get_today_pcs(datesql):
     return pd.read_sql(query, engine, params={"date": f"%{datesql}%"})
 
 
+def get_all_pcs():
+    """Retrieve all computers from the database."""
+    engine = get_db_connection()
+    query = "SELECT * FROM computers WHERE full_disk_info IS NOT NULL AND customer_serial IS NOT NULL"
+    return pd.read_sql(query, engine)
+
 
 # Search PC components from local API
 def search_computer_with_local_api(customer_serial):
@@ -74,6 +80,7 @@ def log_unmapped_component(description, customer_serial):
 # Main Processing
 def process_computers_from_date(date):
     computers = get_today_pcs(date)  # Returns a DataFrame
+    # computers = get_all_pcs()
     comp, pcs = 0, 0
 
     for _, computer in computers.iterrows():  # ✅ Correct way to iterate DataFrame
@@ -107,7 +114,6 @@ def process_computers_from_date(date):
     print(f"Processed {comp} components for {pcs} PCs")
 
 
-
 def export_training_data():
     engine = get_db_connection()  # Use SQLAlchemy engine
     query = "SELECT component, jtl_article_number FROM jtl_articlenumber_mapping WHERE jtl_article_number IS NOT NULL"
@@ -126,10 +132,6 @@ pipeline = joblib.load(config.MAIN_MODEL_FILE)
 fallback_model = joblib.load(config.FALLBACK_MODEL_FILE)
 
 
-
-
-
-# Function to auto-generate a JTL article number
 def generate_new_jtl(component):
     words = component.split()
     keywords = [word.upper()[:4] for word in words if len(word) > 3]
@@ -378,4 +380,3 @@ if __name__ == '__main__':
     controller_thread.start()
 
     root.mainloop()
-
