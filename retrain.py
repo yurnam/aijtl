@@ -5,14 +5,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 import random
+import config
+
+config = config.Config()
 
 
 def retrain():
     # Load updated data
-    df = pd.read_csv("mapped_components.csv").dropna()
+    df = pd.read_csv(config.MAPPED_COMPONENTS_FILE).dropna()
 
     if df.empty:
-        print("No data found in mapped_components.csv! Training aborted.")
+        print("No data found in mapped_components csv! Training aborted.")
         exit()
 
     X = df["component"]
@@ -35,8 +38,8 @@ def retrain():
     fallback_model.fit(X, y)
 
     # Save models
-    joblib.dump(pipeline, "jtl_mapper_model.pkl")
-    joblib.dump(fallback_model, "fallback_model.pkl")
+    joblib.dump(pipeline, config.MAIN_MODEL_FILE)
+    joblib.dump(fallback_model, config.FALLBACK_MODEL_FILE)
 
     print("Models retrained successfully!")
 
@@ -59,7 +62,7 @@ def retrain():
 
     existing_jtl_list = set(y)
 
-    df_unmapped = pd.read_csv("unmapped_components.csv")
+    df_unmapped = pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
 
     if not df_unmapped.empty:
         for index, row in df_unmapped.iterrows():
@@ -78,7 +81,7 @@ def retrain():
             existing_jtl_list.add(predicted_jtl)
 
         # Save updated training data
-        df.to_csv("mapped_components.csv", index=False)
+        df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
         print("Added AI-generated mappings and updated dataset!")
 
     print("Retraining complete.")

@@ -18,7 +18,7 @@ def export_training_data():
     query = "SELECT component, jtl_article_number FROM jtl_articlenumber_mapping WHERE jtl_article_number IS NOT NULL"
 
     df = pd.read_sql(query, engine)  # Use engine instead of pymysql connection
-    df.to_csv("mapped_components.csv", index=False)
+    df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
 
     print("Training data exported successfully!")
 

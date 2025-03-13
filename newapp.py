@@ -22,10 +22,10 @@ def get_db_connection():
     return engine
 
 def load_unmapped_components():
-    return pd.read_csv("unmapped_components.csv")
+    return pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
 
-pipeline = joblib.load("jtl_mapper_model.pkl")
-fallback_model = joblib.load("fallback_model.pkl")
+pipeline = joblib.load(config.MAIN_MODEL_FILE)
+fallback_model = joblib.load(config.FALLBACK_MODEL_FILE)
 
 
 # Function to auto-generate a JTL article number
@@ -36,9 +36,6 @@ def generate_new_jtl(component):
     random_number = random.randint(100, 999)  # Avoid duplicates
     return f"JTL_{base}_{random_number}"
 
-
-# Flask server URL
-FLASK_SERVER = "http://127.0.0.1:5000"
 
 # Initialize pygame for PS4 Controller
 pygame.init()
@@ -95,14 +92,14 @@ def approve_mapping():
 
         component = current_mapping["component"]
         jtl_article_number = current_mapping["predicted_jtl"]
-        df = pd.read_csv("mapped_components.csv")
+        df = pd.read_csv(config.MAPPED_COMPONENTS_FILE)
         new_entry = pd.DataFrame([[component, jtl_article_number]], columns=["component", "jtl_article_number"])
         df = pd.concat([df, new_entry], ignore_index=True)
-        df.to_csv("mapped_components.csv", index=False)
+        df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
 
         df_unmapped = load_unmapped_components()
         df_unmapped = df_unmapped[df_unmapped["component"] != component]
-        df_unmapped.to_csv("unmapped_components.csv", index=False)
+        df_unmapped.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
 
         engine = get_db_connection()
         with engine.connect() as conn:
@@ -130,7 +127,7 @@ def reject_mapping():
         component = current_mapping["component"]
         df_unmapped = load_unmapped_components()
         df_unmapped = df_unmapped[df_unmapped["component"] != component]
-        df_unmapped.to_csv("unmapped_components.csv", index=False)
+        df_unmapped.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
 
     update_status(f"❌ Skipped: {current_mapping['component']}")
     load_next_mapping()
@@ -152,10 +149,10 @@ def create_new_jtl():
             return jsonify({"error": "Component and JTL article number are required"}), 400
 
             # Save to mapped dataset
-        df = pd.read_csv("mapped_components.csv")
+        df = pd.read_csv(config.MAPPED_COMPONENTS_FILE)
         new_entry = pd.DataFrame([[component, jtl_article_number]], columns=["component", "jtl_article_number"])
         df = pd.concat([df, new_entry], ignore_index=True)
-        df.to_csv("mapped_components.csv", index=False)
+        df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
 
         # Update database
         engine = get_db_connection()

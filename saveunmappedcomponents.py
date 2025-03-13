@@ -55,12 +55,12 @@ def log_unmapped_component(description, customer_serial):
     df = pd.DataFrame([[description, customer_serial]], columns=["component", "customer_serial"])
 
     try:
-        df_existing = pd.read_csv("unmapped_components.csv")
+        df_existing = pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
         df = pd.concat([df_existing, df], ignore_index=True)
     except FileNotFoundError:
         pass  # First time running, create a new file
 
-    df.to_csv("unmapped_components.csv", index=False)
+    df.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
 
 
 # Main Processing
