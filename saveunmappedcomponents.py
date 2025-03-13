@@ -88,7 +88,6 @@ def process_computers_from_date(date):
                 
             except KeyError:
                 print(f"Computer with serial {customer_serial} error DB busy")
-                time.sleep(10)
                 continue
 
             for component in components:
@@ -102,4 +101,4 @@ def process_computers_from_date(date):
 
 
 if __name__ == '__main__':
-    process_computers_from_date('2025-03-07')
+    process_computers_from_date('2025-03-13')
