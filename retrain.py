@@ -18,7 +18,7 @@ def retrain():
         print("No data found in mapped_components csv! Training aborted.")
         exit()
 
-    X = df["component"]
+    x = df["component"]
     y = df["jtl_article_number"]
 
     # **Train the Primary Model (RandomForest)**
@@ -27,7 +27,7 @@ def retrain():
         ('clf', RandomForestClassifier(n_estimators=200, random_state=42))
     ])
 
-    pipeline.fit(X, y)
+    pipeline.fit(x, y)
 
     # **Train a Fallback Model for Unseen Components (KNN)**
     fallback_model = Pipeline([
@@ -35,16 +35,13 @@ def retrain():
         ('clf', KNeighborsClassifier(n_neighbors=3))  # Finds closest known JTL
     ])
 
-    fallback_model.fit(X, y)
+    fallback_model.fit(x, y)
 
     # Save models
     joblib.dump(pipeline, config.MAIN_MODEL_FILE)
     joblib.dump(fallback_model, config.FALLBACK_MODEL_FILE)
 
     print("Models retrained successfully!")
-
-
-    # **Function to Auto-Generate a Unique JTL Article Number**
 
     def generate_unique_jtl(component, existing_jtl_list):
         words = component.split()
@@ -85,7 +82,6 @@ def retrain():
         print("Added AI-generated mappings and updated dataset!")
 
     print("Retraining complete.")
-
 
 
 if __name__ == '__main__':

@@ -10,22 +10,123 @@ import pymysql
 from sqlalchemy import create_engine
 from sqlalchemy import text
 from config import Config
-import saveunmappedcomponents
-import savemappedcomponents
 import retrain
 
 config = Config()
+
 
 def get_db_connection():
     connection_string = f"mysql+pymysql://{config.MYSQL_USER}:{config.MYSQL_PASSWORD}@{config.MYSQL_HOST}/{config.MYSQL_DB}"
     engine = create_engine(connection_string)
     return engine
 
+
+def get_pc_parts_mapping(model):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM pc_parts_mapping WHERE model_name = %s LIMIT 1", (model,))
+            result = cursor.fetchone()
+
+    except Exception as e:
+        print(f"An error occurred in get_cpu_cooler_type: {e}")
+    finally:
+        connection.close()
+        if result is not None:
+            return resultswsw
+        else:
+            raise Exception(f"No mapping found for model {model}")
+
+
+def get_today_pcs(datesql):
+    """Retrieve all computers finished on a given date."""
+    engine = get_db_connection()
+    query = text("""
+        SELECT * FROM computers 
+        WHERE finished_time LIKE :date 
+        AND full_disk_info IS NOT NULL 
+        AND customer_serial IS NOT NULL
+    """)
+    return pd.read_sql(query, engine, params={"date": f"%{datesql}%"})
+
+
+
+# Search PC components from local API
+def search_computer_with_local_api(customer_serial):
+    url = f'http://deploymaster:8082/search?customer_serial={customer_serial}'
+    response = requests.get(url)
+    return response.json()
+
+
+# Save unmapped components to CSV for training
+def log_unmapped_component(description, customer_serial):
+    df = pd.DataFrame([[description, customer_serial]], columns=["component", "customer_serial"])
+
+    try:
+        df_existing = pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
+        df = pd.concat([df_existing, df], ignore_index=True)
+    except FileNotFoundError:
+        pass  # First time running, create a new file
+
+    df.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
+
+
+# Main Processing
+def process_computers_from_date(date):
+    computers = get_today_pcs(date)  # Returns a DataFrame
+    comp, pcs = 0, 0
+
+    for _, computer in computers.iterrows():  # ✅ Correct way to iterate DataFrame
+        pcs += 1
+        print(f"Processing PC {pcs} of {len(computers)}")
+
+        customer_serial = computer['customer_serial']  # ✅ Now this works correctly
+        pc_info = search_computer_with_local_api(customer_serial)
+
+        if pc_info:
+            try:
+                components = pc_info['components']
+                pc_jtl = pc_info['jtl_article_number']
+                model_name = pc_info['model_name']
+
+                if pc_jtl in ['None', None, 'null']:
+                    print(f"{model_name} has no JTL article number")
+                    log_unmapped_component(model_name, customer_serial)
+
+            except KeyError:
+                print(f"Computer with serial {customer_serial} error DB busy")
+                continue
+
+            for component in components:
+                comp += 1
+                if component['jtl_article_number'] in ['None', None, 'null']:
+                    print(
+                        f"Component {component['description']} has no JTL article number for PC with serial {customer_serial}")
+                    log_unmapped_component(component['description'], customer_serial)
+
+    print(f"Processed {comp} components for {pcs} PCs")
+
+
+
+def export_training_data():
+    engine = get_db_connection()  # Use SQLAlchemy engine
+    query = "SELECT component, jtl_article_number FROM jtl_articlenumber_mapping WHERE jtl_article_number IS NOT NULL"
+
+    df = pd.read_sql(query, engine)  # Use engine instead of pymysql connection
+    df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
+
+    print("Training data exported successfully!")
+
+
 def load_unmapped_components():
     return pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
 
+
 pipeline = joblib.load(config.MAIN_MODEL_FILE)
 fallback_model = joblib.load(config.FALLBACK_MODEL_FILE)
+
+
+
 
 
 # Function to auto-generate a JTL article number
@@ -51,6 +152,7 @@ else:
 
 current_mapping = None
 
+
 def get_next_mapping():
     """Fetch the next unmapped component from Flask server"""
 
@@ -68,14 +170,14 @@ def get_next_mapping():
     return {"component": component, "predicted_jtl": predicted_jtl}
 
 
-
 def predict_new_jtl(component):
     """Request AI to generate a JTL article number for unseen components"""
     try:
         predicted_jtl = pipeline.predict([component])[0]
         return predicted_jtl
 
-    except:
+    except Exception as e:
+        print(f"Error predicting JTL for {component}: {e}")
         closest_jtl = fallback_model.predict([component])[0]
 
         if closest_jtl:
@@ -112,13 +214,33 @@ def approve_mapping():
             conn.execute(insert_query, {"component": component, "jtl_article_number": jtl_article_number})
             conn.commit()
 
-
         update_status(f"✅ Approved: {current_mapping['component']} → {current_mapping['predicted_jtl']}")
         load_next_mapping()
 
 
 def kill_app_server():
     exit()
+
+
+def background_preprocessing():
+    """Runs preprocessing in a separate thread before the GUI starts"""
+    print("🔄 Starting preprocessing...")
+
+    # Export known mappings before processing new data
+    export_training_data()
+
+    # Fetch & process today's PCs
+    today_date = time.strftime("%Y-%m-%d")
+    process_computers_from_date(today_date)
+
+    # Retrain model
+    retrain.retrain()
+
+    print("✅ Preprocessing complete! GUI will now load available components.")
+
+    # Reload the GUI with the new dataset
+    load_next_mapping()
+
 
 def reject_mapping():
     """Reject the current mapping"""
@@ -132,6 +254,7 @@ def reject_mapping():
     update_status(f"❌ Skipped: {current_mapping['component']}")
     load_next_mapping()
 
+
 def create_new_jtl():
     """Create a new JTL article number manually or via AI"""
     global current_mapping
@@ -143,7 +266,6 @@ def create_new_jtl():
 
         component = current_mapping["component"]
         jtl_article_number = new_jtl
-
 
         if not component or not jtl_article_number:
             return jsonify({"error": "Component and JTL article number are required"}), 400
@@ -165,10 +287,9 @@ def create_new_jtl():
             conn.execute(insert_query, {"component": component, "jtl_article_number": jtl_article_number})
             conn.commit()
 
-
-
         update_status(f"🆕 New JTL Created: {current_mapping['component']} → {new_jtl}")
         load_next_mapping()
+
 
 def load_next_mapping():
     """Load the next component mapping"""
@@ -185,12 +306,13 @@ def load_next_mapping():
         reject_button.config(state=tk.DISABLED)
         new_jtl_button.config(state=tk.DISABLED)
 
+
 def update_status(message):
     """Update the status label in the GUI"""
     status_label.config(text=message)
     root.update_idletasks()
 
-# 🎮 PS4 Controller Listener (Runs in Background)
+
 def ps4_listener():
     """Listen for PS4 controller inputs"""
     while True:
@@ -210,9 +332,9 @@ def ps4_listener():
 
 if __name__ == '__main__':
     """Run the GUI"""
-    savemappedcomponents.export_training_data()
+    export_training_data()
     retrain.retrain()
-    saveunmappedcomponents.process_computers_from_date('2025-03-12')
+    process_computers_from_date('2025-03-12')
 
 
 # Create GUI Window
@@ -242,7 +364,6 @@ if __name__ == '__main__':
     kill_button = ttk.Button(frame, text="🔴 Exit", command=kill_app_server)
     kill_button.pack(side=tk.LEFT, padx=10)
 
-
     new_jtl_label = ttk.Label(frame, text="Enter new JTL Article Number:")
     new_jtl_label.pack(pady=5)
 
@@ -258,5 +379,3 @@ if __name__ == '__main__':
     controller_thread.start()
 
     root.mainloop()
-
-
