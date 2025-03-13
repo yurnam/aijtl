@@ -332,12 +332,12 @@ def ps4_listener():
 
 if __name__ == '__main__':
     """Run the GUI"""
-    export_training_data()
-    retrain.retrain()
-    process_computers_from_date('2025-03-12')
 
+    # Start preprocessing in a separate thread to keep UI responsive
+    preprocessing_thread = threading.Thread(target=background_preprocessing, daemon=True)
+    preprocessing_thread.start()
 
-# Create GUI Window
+    # Create GUI Window
     root = tk.Tk()
     root.title("AI JTL Mapper")
     root.geometry("900x350")
@@ -352,7 +352,7 @@ if __name__ == '__main__':
     predicted_label = ttk.Label(frame, text="", font=("Arial", 10, "bold"))
     predicted_label.pack(pady=5)
 
-    status_label = ttk.Label(frame, text="", font=("Arial", 10))
+    status_label = ttk.Label(frame, text="🔄 Preprocessing data...", font=("Arial", 10))
     status_label.pack(pady=5)
 
     approve_button = ttk.Button(frame, text="✅ Approve", command=approve_mapping)
@@ -373,9 +373,9 @@ if __name__ == '__main__':
     new_jtl_button = ttk.Button(frame, text="🆕 Create New JTL", command=create_new_jtl)
     new_jtl_button.pack(pady=5)
 
-    # Start GUI & Controller Thread
-    load_next_mapping()
+    # Start PS4 Controller Thread
     controller_thread = threading.Thread(target=ps4_listener, daemon=True)
     controller_thread.start()
 
     root.mainloop()
+
