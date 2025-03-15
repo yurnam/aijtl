@@ -5,30 +5,36 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
 
-# Load dataset
-df = pd.read_csv("mapped_components.csv").dropna()
 
-X = df["component"]
-y = df["jtl_article_number"]
+def initial_train():
+    # Load dataset
+    df = pd.read_csv("mapped_components.csv").dropna()
 
-# Train a new AI model
-pipeline = Pipeline([
-    ('tfidf', TfidfVectorizer(ngram_range=(1, 2))),
-    ('clf', RandomForestClassifier(n_estimators=200, random_state=42))
-])
+    X = df["component"]
+    y = df["jtl_article_number"]
 
-pipeline.fit(X, y)
+    # Train a new AI model
+    pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(ngram_range=(1, 2))),
+        ('clf', RandomForestClassifier(n_estimators=200, random_state=42))
+    ])
 
-# Train an additional model for unseen components
-fallback_model = Pipeline([
-    ('tfidf', TfidfVectorizer(ngram_range=(1, 2))),
-    ('clf', KNeighborsClassifier(n_neighbors=3))  # Finds closest known JTL
-])
+    pipeline.fit(X, y)
 
-fallback_model.fit(X, y)
+    # Train an additional model for unseen components
+    fallback_model = Pipeline([
+        ('tfidf', TfidfVectorizer(ngram_range=(1, 2))),
+        ('clf', KNeighborsClassifier(n_neighbors=3))  # Finds closest known JTL
+    ])
 
-# Save models
-joblib.dump(pipeline, "jtl_mapper_model.pkl")
-joblib.dump(fallback_model, "fallback_model.pkl")
+    fallback_model.fit(X, y)
 
-print("Models trained successfully!")
+    # Save models
+    joblib.dump(pipeline, "jtl_mapper_model.pkl")
+    joblib.dump(fallback_model, "fallback_model.pkl")
+
+    print("Models trained successfully!")
+
+
+if __name__ == '__main__':
+    initial_train()

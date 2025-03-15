@@ -33,7 +33,7 @@ def get_pc_parts_mapping(model):
     finally:
         connection.close()
         if result is not None:
-            return resultswsw
+            return result
         else:
             raise Exception(f"No mapping found for model {model}")
 
@@ -65,16 +65,12 @@ def search_computer_with_local_api(customer_serial):
 
 
 # Save unmapped components to CSV for training
+unmapped_components = []  # Store unmapped components in memory
+
 def log_unmapped_component(description, customer_serial):
-    df = pd.DataFrame([[description, customer_serial]], columns=["component", "customer_serial"])
+    unmapped_components.append({"component": description, "customer_serial": customer_serial})
 
-    try:
-        df_existing = pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
-        df = pd.concat([df_existing, df], ignore_index=True)
-    except FileNotFoundError:
-        pass  # First time running, create a new file
 
-    df.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
 
 
 # Main Processing
@@ -114,18 +110,29 @@ def process_computers_from_date(date):
     print(f"Processed {comp} components for {pcs} PCs")
 
 
+mapped_components = {}  # Store mappings in memory
+
 def export_training_data():
-    engine = get_db_connection()  # Use SQLAlchemy engine
-    query = "SELECT component, jtl_article_number FROM jtl_articlenumber_mapping WHERE jtl_article_number IS NOT NULL"
+    """Load mapped components from the database into memory."""
+    global mapped_components
+    mapped_components.clear()  # Clear existing data before reloading
 
-    df = pd.read_sql(query, engine)  # Use engine instead of pymysql connection
-    df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
+    engine = get_db_connection()
+    query = text("SELECT component, jtl_article_number FROM jtl_articlenumber_mapping WHERE jtl_article_number IS NOT NULL")
 
-    print("Training data exported successfully!")
+    try:
+        with engine.connect() as conn:
+            results = conn.execute(query).fetchall()
+            mapped_components = {row[0]: row[1] for row in results}  # Store in memory as a dictionary
+        print("Training data loaded into memory successfully!")
+    except Exception as e:
+        print(f"Error loading training data: {e}")
+
 
 
 def load_unmapped_components():
-    return pd.read_csv(config.UNMAPPED_COMPONENTS_FILE)
+    return unmapped_components
+
 
 
 pipeline = joblib.load(config.MAIN_MODEL_FILE)
@@ -158,13 +165,10 @@ current_mapping = None
 def get_next_mapping():
     """Fetch the next unmapped component from Flask server"""
 
-    df = load_unmapped_components()
-
-    if df.empty:
+    if not unmapped_components:
         return None
 
-    # Pick first unmapped component
-    component = df.iloc[0]["component"]
+    component = unmapped_components.pop(0)["component"]  # Fetch first item and remove it
 
     # Predict using AI
     predicted_jtl = pipeline.predict([component])[0]
@@ -190,21 +194,17 @@ def predict_new_jtl(component):
 
 
 def approve_mapping():
-    """Approve the current mapping"""
+    """Approve the current mapping and store in memory."""
     global current_mapping
     if current_mapping:
-
         component = current_mapping["component"]
         jtl_article_number = current_mapping["predicted_jtl"]
-        df = pd.read_csv(config.MAPPED_COMPONENTS_FILE)
-        new_entry = pd.DataFrame([[component, jtl_article_number]], columns=["component", "jtl_article_number"])
-        df = pd.concat([df, new_entry], ignore_index=True)
-        df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
+        mapped_components[component] = jtl_article_number  # Store in memory
 
-        df_unmapped = load_unmapped_components()
-        df_unmapped = df_unmapped[df_unmapped["component"] != component]
-        df_unmapped.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
+        # Remove approved component from unmapped list
+        unmapped_components[:] = [c for c in unmapped_components if c["component"] != component]
 
+        # Update database
         engine = get_db_connection()
         with engine.connect() as conn:
             insert_query = text("""
@@ -212,11 +212,10 @@ def approve_mapping():
                 VALUES (:component, :jtl_article_number)
                 ON DUPLICATE KEY UPDATE jtl_article_number=:jtl_article_number;
             """)
-
             conn.execute(insert_query, {"component": component, "jtl_article_number": jtl_article_number})
             conn.commit()
 
-        update_status(f"✅ Approved: {current_mapping['component']} → {current_mapping['predicted_jtl']}")
+        update_status(f"✅ Approved: {component} → {jtl_article_number}")
         load_next_mapping()
 
 
@@ -230,13 +229,15 @@ def background_preprocessing():
 
     # Export known mappings before processing new data
     export_training_data()
+    # Retrain model
+    retrain.retrain()
+
 
     # Fetch & process today's PCs
     today_date = time.strftime("%Y-%m-%d")
     process_computers_from_date(today_date)
 
-    # Retrain model
-    retrain.retrain()
+
 
     print("✅ Preprocessing complete! GUI will now load available components.")
 
@@ -246,12 +247,11 @@ def background_preprocessing():
 
 def reject_mapping():
     """Reject the current mapping"""
-    global current_mapping
+    global current_mapping, unmapped_components
     if current_mapping:
         component = current_mapping["component"]
-        df_unmapped = load_unmapped_components()
-        df_unmapped = df_unmapped[df_unmapped["component"] != component]
-        df_unmapped.to_csv(config.UNMAPPED_COMPONENTS_FILE, index=False)
+        unmapped_components = [c for c in unmapped_components if c["component"] != component]  # Remove rejected component
+
 
     update_status(f"❌ Skipped: {current_mapping['component']}")
     load_next_mapping()
@@ -273,10 +273,8 @@ def create_new_jtl():
             return jsonify({"error": "Component and JTL article number are required"}), 400
 
             # Save to mapped dataset
-        df = pd.read_csv(config.MAPPED_COMPONENTS_FILE)
-        new_entry = pd.DataFrame([[component, jtl_article_number]], columns=["component", "jtl_article_number"])
-        df = pd.concat([df, new_entry], ignore_index=True)
-        df.to_csv(config.MAPPED_COMPONENTS_FILE, index=False)
+        mapped_components[component] = jtl_article_number  # Store in memory
+
 
         # Update database
         engine = get_db_connection()
