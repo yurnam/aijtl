@@ -96,7 +96,7 @@ def process_computers_from_date(date):
                 pc_jtl = pc_info['jtl_article_number']
                 model_name = pc_info['model_name']
 
-                if pc_jtl in ['None', None, 'null']:
+                if pc_jtl is None:
                     print(f"{model_name} has no JTL article number")
                     log_unmapped_component(model_name, customer_serial)
 
@@ -106,7 +106,7 @@ def process_computers_from_date(date):
 
             for component in components:
                 comp += 1
-                if component['jtl_article_number'] in ['None', None, 'null']:
+                if component['jtl_article_number'] is None:
                     print(
                         f"Component {component['description']} has no JTL article number for PC with serial {customer_serial}")
                     log_unmapped_component(component['description'], customer_serial)
